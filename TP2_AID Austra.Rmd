@@ -1,0 +1,928 @@
+---
+title: "TP2"
+author: "Debora Chan"
+date: '2022-06-26'
+output:
+  rmdformats::readthedown:
+    toc: 6
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+
+```{r setup, warning=FALSE, cache=FALSE, message=FALSE, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,message=FALSE,cache=FALSE,warning=FALSE}
+
+#- Cargamos las librerias
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(GGally)
+library(corrplot)
+library(factoextra)
+library(ggcorrplot)
+```
+
+# Ejercicio 1
+
+Sea la matriz de varianzas y covarianzas poblacionales:
+
+$M = \begin{pmatrix} 3 & 1 & 1\\ 1 & 3 & 1\\ 1 & 1 & 5 \end{pmatrix}$
+
+Correspondiente al vector aleatorio X = (X1,X2,X3)′ de media 0.
+
+-   
+
+    a)  Hallar los autovalores y autovectores de la matriz de varianzas
+        y covarianzas.
+
+```{r}
+
+#- Lo de arriba es LATEX (para escribir formulas), cuando arranca con $ traduce LATEX
+
+#- Creamos la matriz, que se va a llenar por fila por 3 valores
+M=matrix(c(3,1,1,1,3,1,1,1,5),nrow=3,byrow=TRUE)
+
+
+# verificamos la matriz
+kable(M) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+
+```
+
+```{r}
+#- Ahora al dataset M sacamos los autovalores y los autovectores
+
+#- Con la funcion eigen lo podemos capturar, ingresamos $ para acceder a los objetos de esa funcion
+autovalores=eigen(M)$values  #- Autovalores
+autovectores=eigen(M)$vectors #- Autovectores
+kable(autovalores)
+kable(autovectores) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+
+
+#- Para verlo mejor
+
+eigen(M)
+
+#- Lo que me muestra son los loadings de los componentes principales que corresponden a esta matriz de covarianzas
+```
+
+-   
+
+    b)  Escribir la expresión de las componentes principales Y = (Y1,
+        Y2, Y3)′ e indique que proporción de la variabilidad explica
+        cada una de ellas.
+
+$Y_1=-0.4082483 X_1- 0.4082483 X_2 - 0.8164966 X_3$
+
+$Y_2= -0.5773503 X_1-0.5773503 X_2 +0.5773503 X_3$
+
+$Y_3= 0.7071068 X_1 -0.7071068 X_2$
+
+```{r}
+
+#- Obtenemos el porcentaje de explicacion
+
+porc_explic=100*autovalores/sum(autovalores)
+porc_explic
+
+kable(porc_explic) %>%
+  row_spec(1:3, bold = T, color = "black", background = "#115577")
+
+
+#- La primera explica 54.54 % ...
+```
+
+-   
+
+    c)  Hallar los loadings de la primer componente principal.
+
+```{r,warning=FALSE,message=FALSE}
+
+#- Creamos el data frame df con las siguientes variables:
+
+#- Columna Orden campo factor con valores que van del 1 al 3
+#- Variable Loadings con los autovectores de la primer columna
+#- Feature y, que va a repetir el valor 0, 3 veces
+
+df=data.frame(orden=as.factor(1:3),loadings=autovectores[,1],y=rep(0,3))
+df
+ggplot(df )+geom_segment(aes(x=orden,xend=orden,y=y,yend=loadings,fill=orden,
+                             color=orden,size=1.5))+ theme(legend.position = "none")
+
+
+#- Me queda un bin con el peso de cada autovector
+#- geom_segment le tenes que dar donde arranca que en este caso arrancan todos en cero (por eso el rep) y donde termina
+#- Podemos ver tmb de la columna 2 y 3 de autovectores, pero en el 3 el ultimo tiene un valor tan chico que ni se ve
+
+```
+
+-   
+
+    d)  Hallar los scores de las primeras dos componentes principales
+        correspondientes a la observación X=(2,2,1).
+
+```{r}
+
+#- No la podemos estandarizar porque no tenemos toda la base de datos
+
+#- Para ver los autovectores
+autovectores
+
+
+Y1= -0.4082483 * 2 -0.4082483 * 2 -0.8164966 * 1
+
+Y2= -0.5773503 * 2 -0.5773503 * 2 + 0.5773503 * 1
+
+
+#- Entonces la posicion en que los tengo que dibujar es -2.45 y -1.73
+kable(data.frame("Y1"=Y1,"Y2"=Y2))
+
+
+```
+
+
+
+# *Ejercicio 2*.
+
+## Considerando los datos de la base chalets.xls, se pide:
+
+a.  Graficar el boxplot de cada una de las variables. Indicar, si se
+    observa, la presencia de valores atípicos.
+
+
+```{r}
+
+#- Nos pide un analisis exploratorio
+
+
+#- Leemos los datos
+chalets <- read_excel("../csv/chalets.xls")
+chalet <-chalets
+
+#- Cambiamos los nombres
+names(chalet) <- c("promotora","dur_hipot", "precio_medio",  "superficie" )
+chalet
+```
+
+```{r}
+
+#- BOXPLOT: Duracion de la hipoteca
+
+ggplot(chalet,aes(y=dur_hipot))+geom_boxplot(color="darkgreen",fill="#9FF781") + 
+  coord_flip() + theme_bw()
+
+#- Lo gira, color es para el borde y fill es el relleno
+
+```
+
+
+```{r}
+
+#- Ponemos un summary para ver los valores
+chalet%>%dplyr::select(dur_hipot)%>%summary()
+
+#- visualizamos el outlier 37.3
+#- Los valores estan expresados en año
+```
+
+
+```{r}
+
+#-Tomamos el limite superior que es igual al q3 para saber si es moderado o severo y tomamos luego q3 - q 1 el ri
+vas <- 20.12 + 1.5 * (20.12 - 14.4)
+vas
+vls <- 20.12 + 3 * (20.12 - 14.4)
+vls
+max(chalet$dur_hipot)
+
+#- Es moderado o severo?
+
+
+```
+
+[Se aprecia la presencia de un outlier alto, parece
+severo.]{style="color:blue"}
+
+```{r}
+
+#- Que se observa en el boxplot de precio_medio? 
+ggplot(chalet,aes(y=precio_medio))+geom_boxplot(color="#8A0808",fill="#F6CECE")+
+  coord_flip()+theme_bw()
+chalet%>%dplyr::select(precio_medio)%>%summary()
+
+```
+
+[En este caso no se observan outliers, sin embargo sí se aprecia
+asimetría por la derecha. Esto se ve en el boxplot y también se ve en la
+diferencia entre media y mediana.]{style="color:brown"}
+
+
+
+```{r}
+
+#- BOXPLOT: Superficie
+ggplot(chalet,aes(y=superficie))+geom_boxplot(color="darkblue",fill="#A9E2F3")+
+  coord_flip()+theme_bw()
+chalet%>%dplyr::select(superficie)%>%summary()
+
+```
+
+[Nuevamente no se ven outliers, sí se aprecia asimetría por la
+derecha.]{style="color:darkblue"}
+
+b.  Graficar los diagramas de dispersión de las variables de a pares.
+    Estimar la presencia de correlación entre variables a partir de
+    estos gráficos, indicando si le parece fuerte y el signo de las
+    mismas.
+
+```{r}
+
+#- Seleccionamos unicamente las variables continuas 
+vcont=chalet%>%dplyr::select(2:4)
+ggpairs(vcont)
+
+#- Que podemos ver con el ggpairs?
+
+```
+
+**Se aprecia correlación entre todos los pares de variables**
+**También hay cierta asimetria derecha en los 3 gráficos**
+
+c.  Calcular el vector de medias y la matriz de varianzas y covarianzas
+    muestral.
+
+```{r}
+
+#- Calculamos el vector de medias
+vector_medias=apply(vcont,2,mean)
+kable(vector_medias%>%round(2))
+vector_medias%>%round(2)
+```
+
+
+```{r}
+
+#- Calculamos la matriz de varianzas y covarianzas muestral
+mat_cov=var(vcont)
+kable(mat_cov%>%round(2))
+
+```
+
+d.  Hallar la matriz de correlación muestral. Verificar las estimaciones
+    realizadas visualmente.
+
+```{r}
+
+#- Hacemos la matriz de correlacion y la visualizamos con un ggcorrplot
+M=cor(vcont)
+kable(M%>%round(2))
+ggcorrplot(M, hc.order = TRUE, outline.col = "white") #- Contorno de las celdas en blanco
+
+
+#- hc.order = TRUE
+#- se organizarán los elementos de la matriz de manera que las variables más correlacionadas estén más cerca unas de otras
+
+```
+
+e.  A partir de estas observaciones, le parece razonable pensar en un
+    análisis de componentes principales para reducir la dimensión del
+    problema?
+
+<p style="color:red">
+
+cómo lo justificaría?
+
+</p>
+
+**Dada la fuerte correlación observada entre los pares de variables de
+la base, es razonable pensar en componentes principales para reducir la
+dimensión**
+
+f.  Hallar la primera componente principal y graficar sus coeficientes
+    mediante barras verticales.
+
+```{r}
+
+v_esc=vcont%>%scale()# escalamos las variables
+cp_chal=prcomp(v_esc) #hallamos las componentes principales
+cp_chal
+
+#- Obtenemos los loadings
+#- Primero es de tamaño, los otros de forma, porque es bueno tener uno de tamaño?
+
+#- Cuantas tomarian y por que ?
+
+
+
+
+#- Segunda componente: 
+
+#- Quien va a tener alta esta componente? Los que tienen hipotecas largas pero de bajo precio
+#- Ejemplo: Se compran un depto chiquito en muchos años
+
+#- Como contrapartida va a tener baja la segunda componente los que tienen una hipoteca corta con una propiedad mas cara
+#- Se podria decir que la segunda componente es el poder adquisitivo
+
+```
+PC1 = 0,56*dur_hipot + 0,55*precio_medio + 0,60*superficie
+
+summary(cp_chal): me devuelve el acumulado
+
+hacer el biplot para entender la cosa.
+
+
+# ¿por qué es bueno tener un componente de tamaño? porque si fueran todos de forma, sería muy dificil de interpretar. 
+
+
+
+```{r}
+
+#- GGPLOT: con el orden, los loadings, y donde arrancan para el geom_segment
+df1=data.frame(orden=as.factor(colnames(vcont)),loadings=cp_chal$rotation[,1],y=rep(0,3))
+df1
+ggplot(df1)+geom_segment(aes(x=orden,xend=orden,y=y,yend=loadings,color=orden,
+                             size=1.5))+ theme(legend.position = "none")+xlab("")
+
+```
+
+g.  Indicar qué porcentaje de la variabilidad total logra explicar esta
+    componente.
+
+```{r}
+summary(cp_chal)
+
+#- Primera: 0.9004
+#- Segunda: 0.09252
+#- Tercera: 0.00708
+```
+
+[La primera componente logra explicar el 90% de la variabilidad total
+del conjunto.]{style="color:darkgreen"}
+
+-   Explicar si se trata de una componente de tamaño o de forma.
+
+**Como los loadings tienen todos el mismo signo se trata de una
+componente de tamaño.**
+
+-   Es posible ordenar las promotoras en función de esta componente?.
+-   Si la respuesta es afirmativa, cual es la mayor y cual la menor; si
+    es negativa, explicar por qué no es posible ordenarlos
+
+```{r}
+
+
+#- summary(cp_chal)$x (los scores)
+#- Ordenamelos por el valor inverso de PC1
+
+scores=cbind(as.data.frame(summary(cp_chal)$x),Promotora=1:10)
+scores%>%arrange(-PC1)
+
+#- El valor negativo en la primer columna PC1 a partir de la 5ta fila indica que esta por debajo del promedio de esa componente
+#- Esto significa que las promotoras 8, 10 y 7 estan teniendo clientes con alto poder adquisitivo
+```
+
+```{r}
+
+#- Ahora lo ordenamos por los scores
+
+df3=data.frame(Promotoras=1:10,Scores=cp_chal$x[,1])
+df3%>%arrange(Scores)
+
+#- names(cp_chal)
+
+```
+
+
+# Ejercicio 4. Sea S la matriz de varianzas y covarianzas poblacionales:
+
+3 1 1
+1 4 0
+1 0 2
+
+Correspondiente al vector aleatorio X = (X1,X2,X3)′ donde:
+X1 puntuación media obtenida en las asignaturas de econometría
+X2 puntuación media obtenida en las asignaturas de derecho
+X3 puntuación media obtenida en asignaturas libres
+
+Los datos corresponden a un conjunto de alumnos de la carrera de economía.
+
+a) Calcule los autovalores de la matriz S.
+
+```{r}
+M=matrix(c(3 ,1 ,1,1 ,4 ,0,1, 0, 2),nrow=3,byrow=TRUE)
+M%>%kbl()%>%kable_classic_2(full_width=FALSE,html_font = "cambria")
+
+```
+
+```{r}
+autovalores=eigen(M)$values
+autovectores=eigen(M)$vectors
+autovalores
+autovectores
+```
+
+b) Interprete la segunda componente principal sabiendo que el autovector correspondiente:
+e1 = (0, 5744;−0, 5744; 0, 5744).
+
+**Esta componente contrasta la puntuación de econometría y materias libres con la puntuación  en derecho. El estudiante que tenga una puntuación alta en esta componente le fue mucho mejor en econometría  y materias libres que en derecho. **
+
+c) Como se debería interpretar si un estudiante tuviera  una puntuación
+en la componente principal muy inferior a la de sus compañeros?.
+
+**Un estudiante con puntuación baja en esta componente e destacha en derecho y no le va muy bien en las otras dos.**
+
+d) ¿Cuántas componentes principales serán necesarias para explicar al menos
+el 80% de la variabilidad total del conjunto?
+
+```{r}
+contribucion<-autovalores/sum(autovalores)
+rbind(contribucion,cumsum(contribucion))
+```
+[Con las dos primeras componentes principales es suficiente]{style="color:violet"}
+
+
+
+
+
+
+# Ejercicio 5
+
+ El siguiente conjunto de datos de la tabla 1 se refiere a 20
+observaciones de suelo, donde se midió:
+
+-   x1: contenido de arena,
+-   x2: contenido de cieno,
+-   x3: contenido de arcilla,
+-   x4: contenido de materia orgánica
+-   x5: acidez, según PH.
+
+Compare los resultados del Análisis en Componentes Principales para la
+matriz de covarianza y para la matriz de correlación.
+
+```{r}
+#leemos los datos
+Suelo <- read_excel("../csv/Suelo.xlsx")
+suelos=Suelo%>%rename(arena=x1,cieno=x2,arcilla=x3,mat.org=x4,acidez=x5)
+suelos
+```
+
+```{r}
+#Componentes principales con matriz de covarianza
+
+suelos.pca.cov=prcomp(suelos[,-1],scale=FALSE)
+summary(suelos.pca.cov)
+fviz_screeplot(suelos.pca.cov, addlabels = TRUE, ylim = c(0,97))
+fviz_pca_ind(suelos.pca.cov, geom.ind = "point", 
+             col.ind = "#FC4E07", 
+             axes = c(1, 2), 
+             pointsize = 1.5) 
+fviz_contrib(suelos.pca.cov, choice = "var", axes = 1, top = 10)
+biplot(suelos.pca.cov, scale = 0, cex = 0.5, col = c("dodgerblue3", "deeppink3"))
+```
+
+```{r}
+#Componentes principales con matriz de correlación
+suelos.pca.corr=prcomp(suelos[,-1],scale=TRUE)
+summary(suelos.pca.corr)
+
+fviz_screeplot(suelos.pca.corr, addlabels = TRUE, ylim = c(0,97))
+fviz_pca_ind(suelos.pca.corr, geom.ind = "point", 
+             col.ind = "#FC4E07", 
+             axes = c(1, 2), 
+             pointsize = 1.5) 
+fviz_contrib(suelos.pca.corr, choice = "var", axes = 1, top = 10)
+biplot(suelos.pca.corr, scale = 0, cex = 0.5, col = c("dodgerblue3", "deeppink3"))
+```
+
+a.  Los porcentajes de variabilidad que logran explicar cada una de las
+    componentes son los mismos?
+
+```{r}
+summary(suelos.pca.cov)$importance
+
+summary(suelos.pca.corr)$importance
+```
+
+b.  Cambia el orden de las componentes? **¿a qué se refiere?**
+
+```{r}
+suelos.pca.cov$rotation
+suelos.pca.corr$rotation
+
+```
+
+c.  Cambian los loadings de las componentes?
+
+Sí pierden peso las unidades de medición en el segundo análisis.
+
+d.  Cuál de los dos análisis le parece más adecuado y por qué?.
+
+Siempre es más robusto el análisis de componentes principales con la matriz de correlación.
+
+
+
+
+
+# Ejercicio 6
+
+La tabla gorriones.xls contiene datos de 49 aves, 21 de los cuales sobrevivieron a una tormenta.
+Se pide:
+
+```{r}
+gorriones <- read_excel("../csv/gorriones.xlsx")
+gorriones %>% head()
+```
+
+
+a) Estandarice las variables y calcule la matriz de covarianzas para las variables estandarizadas
+
+```{r}
+gorr <- gorriones[,-1] %>% scale() 
+gorr %>% var() %>% round(3)
+```
+
+```{r}
+as.data.frame(cov(scale(gorriones[,-1]))) 
+```
+
+
+b) Verifique que ésta es la matriz de correlación de las variables originales.
+
+```{r}
+gorr_corr <- cor(gorriones[,-1])
+gorr_corr
+```
+
+
+c) Le parece adecuado en este caso un análisis de componentes principales. 
+Qué indica el autovalor para una componente principal?
+
+```{r}
+ggcorrplot(as.data.frame(gorr_corr))
+```
+
+En el gráfico podemos ver varias correlaciones fuertes entre variables, por lo que se puede usar PCA.
+
+```{r}
+autovalores=eigen(gorr_corr)$values
+autovectores=eigen(gorr_corr)$vectors
+autovalores
+autovectores
+```
+
+
+d) Cuántas componentes son necesarias para explicar el 80 % de la varianza total?
+Realice el gráfico de sedimentación, fundamente su respuesta con este gráfico
+
+```{r}
+g_cor <- gorriones[,2:6] %>% cor() %>% round(3)
+g_cov <- gorriones[,2:6] %>% var() %>% round(3)
+g_original <- gorriones[,2:6] %>% round(3)
+```
+
+```{r}
+prcomp(g_cor)
+prcomp(g_cov)
+prcomp(g_original)
+```
+```{r}
+pcaGorr <- prcomp(gorriones[,-1], scale=TRUE)
+sumPcaGorr <- summary(pcaGorr)
+as.data.frame(sumPcaGorr$importance)
+
+fviz_screeplot(pcaGorr, addlabels = TRUE, ylim = c(0,97))
+```
+
+```{r}
+data.frame(Autovalores=eigen(gorr_corr)$values)
+```
+#### Según el criterio de Kaiser deberíamos tomar todos los componentes cuyos respectivos autovalores son mayores/iguales que uno, o sea que tomaríamos 2 componentes.
+#### Pero para llegar al 80% deberíamos tomar 3 componentes.
+
+
+
+```{r}
+cp_corr=prcomp(cor(gorriones[,-1])) #hallamos las componentes principales
+cp_cov=prcomp(var(gorriones[,-1]))
+cp_original = prcomp(gorriones[,-1])
+#summary(cp_chal)
+cp_corr
+cp_cov
+cp_original
+```
+
+
+```{r}
+library(psych)
+scree(gorriones[,-1],main ="Grafico_de_Sedimentacion")
+
+```
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(factoextra)
+
+# Calcular las componentes principales
+pca_result <- prcomp(gorriones[,-1], scale. = TRUE)
+
+# Crear un gráfico de sedimentación
+fviz_screeplot(pca_result, addlabels = TRUE, ylim = c(0, 96)) +
+  labs(title = "Gráfico de Sedimentación (Scree Plot)",
+       x = "Componente Principal",
+       y = "Varianza Explicada (%)") +
+  theme_minimal()
+```
+
+
+e) Cuál es la expresión de la primer componente principal? 
+(en función del autovector correspondiente y de las variables)
+
+```{r}
+pca_result
+```
+
+#### La expresion para la primer componente sería: 0.45*largototal + 0.46*extension + 0,45*cabeza + 0,47*humero + 0.39*esternon - 0.02*sobrevida
+
+
+f) Cómo queda expresada la primer componente principal? 
+(en función del autovector correspondiente y de las variables).
+
+**¿Cuál sería la diferencia con el punto anterior?**
+
+
+g) Encuentre coordenadas del pájaro 11 en las nuevas componentes
+
+
+#### Es el producto vectorial del vector de coordenadas y los valores para el pajaro 11 pero estandarizadas.
+
+```{r}
+gorrScaled=scale(gorriones[,2:7])
+
+data.frame(
+  PC1= as.vector(pcaGorr$rotation[,1]) %*% as.vector(t(gorrScaled[11,])),
+  PC2= as.vector(pcaGorr$rotation[,2]) %*% as.vector(t(gorrScaled[11,])),
+  PC3= as.vector(pcaGorr$rotation[,3]) %*% as.vector(t(gorrScaled[11,]))
+  )
+```
+#### Acá lo hacemos para todas las componentes
+```{r}
+as.vector(gorrScaled[11,]) %*% as.matrix(pcaGorr$rotation) 
+```
+
+
+
+```{r}
+#library(ggplot2)
+#library(factoextra)
+#library(dplyr)
+
+biplot(pca_result)
+
+fviz_pca_biplot(pca_result, col.var = "blue", col.ind = "red") +
+  theme_minimal()
+
+
+```
+
+
+h) Represente gráficamente en el plano. (Eje 1 vs 2, 1 vs 3, 2 vs 3).
+Interprete los tres primeros ejes.
+
+```{r}
+fviz_pca_biplot(pcaGorr, axes=c(1,2), repel = TRUE)
+
+```
+
+
+```{r}
+fviz_pca_biplot(pcaGorr, axes=c(1,3), repel = TRUE)
+
+```
+
+
+
+```{r}
+# Calcular las componentes principales
+pca_result <- prcomp(gorriones[,2:7], scale. = TRUE)
+
+# Crear el biplot con las componentes 1 y 3
+fviz_pca_biplot(pca_result, col.var = "blue", col.ind = "red",  repel=TRUE,
+                axes = c(1, 3)) + 
+  theme_minimal() 
+```
+
+```{r}
+# Crear el biplot con las componentes 1 y 3
+fviz_pca_biplot(pca_result, col.var = "blue", col.ind = "red", repel = TRUE,
+                axes = c(2, 3)) + 
+  theme_minimal() 
+```
+
+
+
+
+#### Caracterización de las dimensiones para tener como referencia:
+```{r}
+df1=data.frame(orden=as.factor(colnames(gorriones[2:7])),loadings=pcaGorr$rotation[,1],y=rep(0,6))
+df1
+
+ggplot(df1 )+geom_segment(aes(x=orden,xend=orden,y=y,yend=loadings,color=orden,
+                             size=1.5))+ theme(legend.position = "none")+xlab("")
+```
+
+
+
+```{r}
+df1=data.frame(orden=as.factor(colnames(gorriones[2:7])),loadings=pcaGorr$rotation[,2],y=rep(0,6))
+df1
+
+ggplot(df1 )+geom_segment(aes(x=orden,xend=orden,y=y,yend=loadings,color=orden,
+                             size=1.5))+ theme(legend.position = "none")+xlab("")
+```
+
+
+
+```{r}
+df1=data.frame(orden=as.factor(colnames(gorriones[2:7])),loadings=pcaGorr$rotation[,3],y=rep(0,6))
+df1
+
+ggplot(df1 )+geom_segment(aes(x=orden,xend=orden,y=y,yend=loadings,color=orden,
+                             size=1.5))+ theme(legend.position = "none")+xlab("")
+```
+
+
+i) Realice un gráfico donde se observen los gorriones en los nuevos ejes 1 y 2,
+y resalte con distinto color el grupo de los que sobrevivieron.
+
+```{r}
+fviz_pca_ind(pcaGorr, axes=c(1,2), repel = TRUE, habillage = gorriones$sobrevida, addEllipses=TRUE, ellipse.level=0.95)
+```
+
+
+
+```{r}
+# Agregar las componentes principales al DataFrame original
+data_pca <- cbind(gorriones, as.data.frame(pca_result$x[, c(1, 2)]))
+
+# Crear el gráfico de dispersión con colores según el grupo de gorriones que sobrevivieron
+ggplot(data_pca, aes(x = PC1, y = PC2, color = sobrevida)) +
+  geom_point(size = 3) +
+  labs(title = "Gráfico de Dispersión de Componentes Principales",
+       x = "Componente Principal 1",
+       y = "Componente Principal 2",
+       color = "sobrevida")
+       #shape = "Grupo") +
+  theme_minimal()
+```
+
+
+
+
+
+j) Utilice el Análisis en Componentes Principales como método para encontrar outliers
+
+
+
+
+
+
+
+# Ejercicio 7
+
+Con el objetivo de obtener índices útiles para la gestión hospitalaria
+basados en técnicas estadísticas multivariantes descriptivas se recogió
+información del Hospital de Algeciras correspondiente a los ingresos hospitalarios
+del periodo 2007-2008.
+Se estudiaron las variables habitualmente monitorizadas por el Servicio Andaluz de Salud,
+del Sistema Nacional de Saludo Español:
+
+- NI: número de ingresos
+- MO: mortalidad
+- RE: número de reingresos
+- NE: número de consultas externas
+- ICM: índice de masa corporal
+- ES: número de estancias
+- FI: índice funcional
+
+
+Las variables midieron en un total de 22.486 ingresos.
+En la siguiente tabla se aprecia la Distribución de los valores obtenidos en las variables listadas
+por los servicios del hospital de Algeciras (Andalucía, España).
+
+La idea central del ACP es conseguir la simplificación de un conjunto de datos, generalmente cuantitativos, procedentes de un conjunto de variables interrelacionadas. Este objetivo se alcanza obteniendo, a partir de combinaciones lineales de las variables originalmente medidas,un nuevo conjunto de igual número de variables,no correlacionadas,llamadas componentes principales (CP) en las cuales permanece la variabilidad presenteen los datos originales, y que al ordenar las decrecientemente por su varianza, nos permiten explicar el fenómeno de estudio con las primeras CP. Verificar que las primeras dos componentes principales son:
+
+
+
+
+Y1 = 0,5380 NI + 0,5126 ES + 0,4081 IF + 0,2635 MO − 0,1561 NE − 0,2535 RE − 0,3511 ICM
+
+Y2 = 0,5524 MO + 0,4952 RE + 0,4696 ICM + 0,3756 ES + 0,2867 NE + 0,05778 IF − 0,04908 NI
+
+
+
+
+
+a) Grafique las cargas y explicar la interpretación de las componentes principales.
+
+b) Qué porcentaje de variabilidad logra captar cada una de ellas?. Grafique el screeplot.
+
+c) Le parece adecuado considerar dos componentes principales?. 
+
+d) Hallar la correlación entre las nuevas variables y las originales. 
+
+e) Ordenar los servicios en función de su puntuación en cada una de las dos primeras componentes principales. Indicar cuales son los servicios más demandados y los más complejos.
+
+f) Representar un biplot y buscar servicios similares, asociaciones entre las variables. Verificar en este grafico la representación de las variables originales en las componentes.
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
