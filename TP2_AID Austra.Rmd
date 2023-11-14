@@ -405,6 +405,96 @@ df3%>%arrange(Scores)
 
 ```
 
+# Ejercicio 3. Dado el siguiente conjunto de datos:
+
+3  6
+5  6
+10 12
+
+```{r}
+matEj3 <- matrix(data = c(3, 6, 5, 6,10,12), nrow = 3, ncol = 2)
+matEj3
+```
+
+
+a) Calcule la matriz de covarianza, los autovalores y autovectores.
+
+```{r}
+# Matriz de varianza y covarianza
+covEj3 <- cov(matEj3)
+# autovalores y autovectores de la matriz
+eigen3 <- eigen(covEj3)
+aVal3 <- eigen3$values
+aVec3 <- eigen3$vectors
+
+
+covEj3 %>%   kbl(caption = "Matriz de varianzas y covarianzas") %>% kable_classic(full_width =F)
+aVal3 %>%   kbl(caption = "Autovalores") %>% kable_classic(full_width =F)
+aVec3 %>%   kbl(caption = "Autovectores") %>% kable_classic(full_width =F)
+
+```
+
+
+b) Las componentes principales y su contribución porcentual a la varianza total.
+
+```{r}
+pca3 <- prcomp(matEj3, center=FALSE,scale=FALSE)
+pca3$rotation  %>%   kbl(caption = "Conmponente Principal") %>% kable_classic(full_width =F)
+```
+
+```{r}
+summary(pca3)$importance[2:3,] %>%   kbl(caption = "Proporción explicada") %>% kable_classic(full_width =F)
+```
+
+c) Grafique los datos en R2x2 en la base original y en la base de los dos primeros ejes.
+
+```{r}
+# Graficar en la base original
+plot(matEj3, col = "blue", pch = 16, main = "Datos en la Base Original", xlab = "Variable 1", ylab = "Variable 2")
+
+# Graficar en la base de los dos primeros ejes
+biplot(pca3, col = c("blue", "red"), cex = 0.8, main = "Datos en la Base de los Dos Primeros Ejes")
+
+```
+
+
+d) Repita los cálculos con los datos estandarizados. Interprete los resultados obtenidos
+
+```{r}
+corEj3 <- cor(matEj3)
+eigen3d <- eigen(corEj3)
+aVal3d <- eigen3d$values
+aVec3d <- eigen3d$vectors
+pca3d <- prcomp(matEj3, center=TRUE, scale=TRUE)
+pca3d
+```
+
+
+e) Verifique que los dos primeros autovectores son ortogonales entre sí. Represente gráficamente estos dos vectores en un gráfico bidimensional y trace rectas desde el origen hasta la ubicación de cada uno de los vectores en el gráfico.
+
+```{r}
+# Calcular el Análisis de Componentes Principales (PCA)
+pca_result <- prcomp(matEj3, scale. = TRUE)
+
+# Obtener los autovectores
+autovectores <- pca_result$rotation[, 1:2]
+
+# Verificar ortogonalidad
+ortogonalidad <- sum(autovectores[, 1] * autovectores[, 2])
+
+# Graficar los dos primeros autovectores
+plot(1, type = "n", xlim = c(0, 1), ylim = c(0, 1), xlab = "Variable 1", ylab = "Variable 2", main = "Autovectores y Ortogonalidad")
+arrows(0, 0, autovectores[1, 1], autovectores[2, 1], col = "blue", length = 0.1, angle = 20)
+arrows(0, 0, autovectores[1, 2], autovectores[2, 2], col = "red", length = 0.1, angle = 20)
+legend("topright", legend = c("Autovector 1", "Autovector 2", paste("Ortogonalidad =", round(ortogonalidad, 2))), col = c("blue", "red", "black"), lty = 1)
+
+# Imprimir ortogonalidad
+cat("La ortogonalidad entre los dos primeros autovectores es:", round(ortogonalidad, 2), "\n")
+```
+
+**El producto escalar entre los autovectores es 0 por lo tanto son ortogonales**
+
+
 
 # Ejercicio 4. Sea S la matriz de varianzas y covarianzas poblacionales:
 
@@ -797,7 +887,7 @@ ggplot(data_pca, aes(x = PC1, y = PC2, color = sobrevida)) +
 
 j) Utilice el Análisis en Componentes Principales como método para encontrar outliers
 
-
+**?????????**
 
 
 
@@ -835,23 +925,91 @@ Y1 = 0,5380 NI + 0,5126 ES + 0,4081 IF + 0,2635 MO − 0,1561 NE − 0,2535 RE �
 Y2 = 0,5524 MO + 0,4952 RE + 0,4696 ICM + 0,3756 ES + 0,2867 NE + 0,05778 IF − 0,04908 NI
 
 
+```{r}
+hospitales <- read_excel("../csv/hospital.xlsx")
+hospitales %>% head()
+```
 
 
 
 a) Grafique las cargas y explicar la interpretación de las componentes principales.
 
+```{r}
+pcaHosp <- prcomp(hospitales[2:8],scale=TRUE)
+```
+
+```{r}
+as.data.frame(pcaHosp$rotation)  
+```
+
+
 b) Qué porcentaje de variabilidad logra captar cada una de ellas?. Grafique el screeplot.
+
+```{r}
+sumHosp <- summary(pcaHosp)
+
+as.data.frame(sumHosp$importance[2:3,]) 
+```
+
 
 c) Le parece adecuado considerar dos componentes principales?. 
 
+Criterio de Kaiser
+```{r}
+eigen(cor(hospitales[2:8]))$values
+
+```
+Si seguimos el criterio de Kaiser deberiamos quedarnos con los 3 primeros componentes.
+
+
+Criterio del bastón roto
+```{r}
+fviz_screeplot(pcaHosp, addlabels = TRUE, ylim = c(0,97))
+```
+Podriamos tomar 4 componentes.
+
+
 d) Hallar la correlación entre las nuevas variables y las originales. 
+
+```{r}
+M = cor(hospitales[2:8])
+corrplot(M)
+```
+
+Calculo las nuevas variables con las coordenadas de los autovectores aplicadas a las variables medidas estandarizadas
+
+```{r}
+scores <- as.matrix(scale(hospitales[2:8])) %*% as.matrix(pcaHosp$rotation)
+M = cor(scores)
+corrplot(M)
+```
+
+Y comprobamos que todos los componentes son ortogonales, es decir no tienen correlación entre ellos.
+
+
 
 e) Ordenar los servicios en función de su puntuación en cada una de las dos primeras componentes principales. Indicar cuales son los servicios más demandados y los más complejos.
 
+```{r}
+scoresDF <- as.data.frame(scores) 
+rownames(scoresDF) <- t(hospitales[,1])
+scoresDF %>% arrange(desc(PC1)) 
+```
+
+No sabría como interpretar complejidad en base a los datos del ejercicio, pero la primera componente favorece reingresos e indice cardiaco medio, podriamos decir que es esa. O también la componente 2 con signo cambiado donde penaliza los ingresos…. Quedemosnos con esa….yo que se…
+
+En cuanto a los mas demandados probablemente sean los que tengan elevada la 3ra  componente.
+
+
+
 f) Representar un biplot y buscar servicios similares, asociaciones entre las variables. Verificar en este grafico la representación de las variables originales en las componentes.
 
- 
- 
+```{r}
+fviz_pca_biplot(pcaHosp)
+```
+
+La especialidad psiquiatrica es la que mas puntúa en la primera componente. Más reingresos e ICM. En el lado opuesto esta medicina interna
+*12 y 13 son similares y pero cercanos al promedio. 2 y 10 son similares y 7 y 3 también.
  
  
  
